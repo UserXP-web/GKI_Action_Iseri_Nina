@@ -113,10 +113,7 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # ========================================================
-      # 解析版本参数
-      # ========================================================
+        
       - name: 解析版本参数
         run: |
           SELECTION="${{ inputs.tag_selection }}"
@@ -237,9 +234,6 @@ jobs:
           cd common
           patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
 
-      # ========================================================
-      # [核心修复] 注入 ZRAM/BBG 补丁 (补全了复制源代码的命令)
-      # ========================================================
       - name: 注入 ZRAM/BBG 补丁
         run: |
           cd "$CONFIG/common"
