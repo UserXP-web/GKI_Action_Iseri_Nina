@@ -1,4 +1,4 @@
-name: Build GKI A12-5.10
+name: Build GKI A12-5.10 (Select Version)
 
 permissions:
   contents: write
@@ -7,7 +7,7 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      # 核心功能：版本选择器
+      # 1. 核心功能：版本选择器 (包含 sub_level, patch, revision)
       tag_selection:
         description: "选择内核版本 (格式: 子版本 | 补丁日期 | 修订号)"
         required: true
@@ -17,16 +17,28 @@ on:
           - "5.10.226 | 2024-11 | r8"
           - "5.10.218 | 2024-08 | r14"
           - "5.10.209 | 2024-05 | r13"
-          - "5.10.198 | 2024-01 | r17"
           - "Manual Input (See below)"
         default: "5.10.233 | 2025-02 | r5"
       
-      # 手动输入覆盖（可选）
+      # 2. 手动版本覆盖 (如果上面选了 Manual Input)
       manual_version:
-        description: "手动输入(仅当上方选Manual时生效, 格式: 5.10.xxx 20xx-xx rxx)"
+        description: "手动版本参数 (仅 Manual 模式生效, 格式: 5.10.233 2025-02 r5)"
+        required: false
+        type: string
+      
+      # 3. [已恢复] 自定义版本名后缀
+      version:
+        description: '自定义版本名 (如 -MyKernel)'
+        required: false
+        type: string
+      
+      # 4. [已恢复] 构建时间
+      build_time:
+        description: '设置内核构建时间 (留空使用当前时间)'
         required: false
         type: string
 
+      # 其他功能开关
       kernelsu_variant:
         description: "选择 KernelSU 变体"
         required: true
@@ -96,38 +108,28 @@ jobs:
         uses: actions/checkout@v4
 
       # ========================================================
-      # 核心步骤：解析用户选择的版本
+      # 解析版本参数 (Sublevel 由此步骤决定)
       # ========================================================
       - name: 解析版本参数
         run: |
-          # 获取输入
           SELECTION="${{ inputs.tag_selection }}"
           MANUAL="${{ inputs.manual_version }}"
           
-          # 判断是否使用手动输入
           if [[ "$SELECTION" == "Manual Input"* ]] && [[ -n "$MANUAL" ]]; then
             echo "使用手动输入的版本: $MANUAL"
-            # 假设手动格式为空格分隔: 5.10.233 2025-02 r5
+            # 格式: 5.10.233 2025-02 r5
             SUB_LEVEL=$(echo "$MANUAL" | awk '{print $1}' | cut -d. -f3)
             OS_PATCH=$(echo "$MANUAL" | awk '{print $2}')
             REV=$(echo "$MANUAL" | awk '{print $3}')
           else
             echo "使用预设版本: $SELECTION"
-            # 预设格式: "5.10.233 | 2025-02 | r5"
-            # awk $1=5.10.233, $3=2025-02, $5=r5 (因为 | 也是分隔符)
+            # 格式: 5.10.233 | 2025-02 | r5
             SUB_LEVEL=$(echo "$SELECTION" | awk -F' | ' '{print $1}' | cut -d. -f3)
-            # 处理 awk 分割可能存在的空格问题，这里使用更稳健的 cut
-            # 原始串: 5.10.233 | 2025-02 | r5
-            OS_PATCH=$(echo "$SELECTION" | cut -d'|' -f2 | xargs) # xargs 去除首尾空格
+            OS_PATCH=$(echo "$SELECTION" | cut -d'|' -f2 | xargs)
             REV=$(echo "$SELECTION" | cut -d'|' -f3 | xargs)
           fi
 
-          echo "解析结果:"
-          echo "  Sub Level: $SUB_LEVEL"
-          echo "  Patch: $OS_PATCH"
-          echo "  Revision: $REV"
-
-          # 写入环境变量供后续步骤使用
+          echo "解析结果: 5.10.$SUB_LEVEL / $OS_PATCH / $REV"
           echo "SUB_LEVEL=$SUB_LEVEL" >> $GITHUB_ENV
           echo "OS_PATCH_LEVEL=$OS_PATCH" >> $GITHUB_ENV
           echo "REVISION=$REV" >> $GITHUB_ENV
@@ -152,7 +154,6 @@ jobs:
           echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV
           echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
           
-          # 生成签名Key
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
           echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
 
@@ -162,7 +163,6 @@ jobs:
           git clone https://github.com/zzh20188/GKI_KernelSU_SUSFS.git zzh_patch
           git clone https://github.com/Numbersf/Action-Build.git --depth=1
           
-          # 选择 SUSFS 仓库
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ] || [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             git clone https://github.com/ShirkNeko/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}"
           else
@@ -175,18 +175,13 @@ jobs:
           cd "$CONFIG"
           git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-6.4.1.git gcc
 
-          # 构建 Manifest 分支名
-          # 格式通常为: common-android12-5.10-YYYY-MM
           MANIFEST_BRANCH="common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}-${{ env.OS_PATCH_LEVEL }}"
-          
           echo "正在同步分支: $MANIFEST_BRANCH"
           
-          # 初始化 (移除 --no-tags 以修复版本号生成)
           $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b $MANIFEST_BRANCH --repo-rev=v2.16
           
-          # 如果同步失败(比如Google还没发布这个月的Tag)，尝试回退到通用的 android12-5.10 分支
           if ! $REPO sync -c -j$(nproc --all) --fail-fast; then
-             echo "错误: 无法同步分支 $MANIFEST_BRANCH，尝试同步通用分支..."
+             echo "错误: 无法同步分支 $MANIFEST_BRANCH，尝试通用分支..."
              $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
              $REPO sync -c -j$(nproc --all) --fail-fast
           fi
@@ -196,7 +191,6 @@ jobs:
           VAR="${{ inputs.kernelsu_variant }}"
           BR="${{ inputs.kernelsu_branch }}"
           ARG=""
-          
           if [ "$BR" == "tmp-builtin" ]; then
              ARG="-s tmp-builtin"
           elif [ "$BR" == "Stable(标准)" ]; then
@@ -204,7 +198,4 @@ jobs:
           elif [ "$BR" == "Dev(开发)" ]; then
              if [[ "$VAR" == "SukiSU" || "$VAR" == "ReSukiSU" ]]; then ARG="-s tmp-builtin"; else ARG="-s main"; fi
           fi
-          
-          echo "KSU_ARGS=$ARG" >> $GITHUB_ENV
-
-      - name: 注入 Kernel
+          echo "KSU_ARGS=$A
