@@ -1,51 +1,78 @@
 name: Handle Release
 
-# 只有发布才需要写入权限
 permissions:
   contents: write
 
 on:
+  # 1. 自动触发 (保持不变)
   workflow_run:
-    workflows: ["Build GKI A12-5.10"] # 注意：这里必须和你的构建脚本 name 一致！
+    workflows: ["Build GKI A12-5.10"]
     types:
       - completed
+  
+  # 2. [新增] 手动触发 (用于测试)
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "输入构建成功的 Run ID (去Actions页面点开构建记录，URL最后的数字)"
+        required: true
+        type: string
 
 jobs:
   upload-release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} # 只有构建成功才发版
+    # 如果是手动触发，总是运行；如果是自动触发，必须是 success 才运行
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     
     steps:
-      - name: 下载元数据 (Tag名/标题/正文)
+      # [核心逻辑] 判断 ID 来源
+      - name: Determine Run ID
+        id: get_id
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "TARGET_ID=${{ inputs.run_id }}" >> $GITHUB_ENV
+            echo "Mode: Manual Trigger using Run ID ${{ inputs.run_id }}"
+          else
+            echo "TARGET_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_ENV
+            echo "Mode: Auto Trigger from Workflow Run"
+          fi
+
+      - name: Download Metadata
         uses: actions/download-artifact@v4
         with:
           name: release_metadata
           path: release_info
-          run-id: ${{ github.event.workflow_run.id }}
+          # 使用刚才判断出来的 ID
+          run-id: ${{ env.TARGET_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 下载内核产物
+      - name: Download Kernel Artifacts
         uses: actions/download-artifact@v4
         with:
           name: Kernel_Build_Output
           path: assets
-          run-id: ${{ github.event.workflow_run.id }}
+          # 使用刚才判断出来的 ID
+          run-id: ${{ env.TARGET_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 读取元数据到环境变量
+      - name: List Files (Debug)
+        run: ls -R assets
+
+      - name: Read Metadata
         run: |
           echo "TAG_NAME=$(cat release_info/tag_name.txt)" >> $GITHUB_ENV
           echo "RELEASE_TITLE=$(cat release_info/release_title.txt)" >> $GITHUB_ENV
-          
-          # 检查文件是否下载成功
-          ls -R
 
-      - name: 创建 Release 并发布
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: ${{ env.RELEASE_TITLE }}
-          body_path: release_info/release_body.md  # 直接读取 Markdown 文件
-          files: assets/*                          # 上传 assets 文件夹下的所有文件
+          body_path: release_info/release_body.md
+          # 包含之前的递归查找修复
+          files: |
+            assets/**/*.zip
+            assets/**/*.img
+            assets/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
