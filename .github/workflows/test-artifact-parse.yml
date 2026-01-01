@@ -1,20 +1,18 @@
-name: Test Artifact Parser
-
 on:
   workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: "Run ID of build workflow"
+        required: true
 
 jobs:
-  test-parse:
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: GKI
+          run-id: ${{ inputs.build_run_id }}
           path: artifacts
+          merge-multiple: true
 
-      - name: Parse file
-        run: |
-          GKI_FILE=$(find artifacts -maxdepth 1 -name "GKI-*.zip" -print -quit)
-          echo "Found: $GKI_FILE"
-
+      - run: ls -R artifacts
