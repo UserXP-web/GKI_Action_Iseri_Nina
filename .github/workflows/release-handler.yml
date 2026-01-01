@@ -1,1 +1,51 @@
+name: Handle Release
 
+# 只有发布才需要写入权限
+permissions:
+  contents: write
+
+on:
+  workflow_run:
+    workflows: ["Build GKI A12-5.10"] # 注意：这里必须和你的构建脚本 name 一致！
+    types:
+      - completed
+
+jobs:
+  upload-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} # 只有构建成功才发版
+    
+    steps:
+      - name: 下载元数据 (Tag名/标题/正文)
+        uses: actions/download-artifact@v4
+        with:
+          name: release_metadata
+          path: release_info
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 下载内核产物
+        uses: actions/download-artifact@v4
+        with:
+          name: Kernel_Build_Output
+          path: assets
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 读取元数据到环境变量
+        run: |
+          echo "TAG_NAME=$(cat release_info/tag_name.txt)" >> $GITHUB_ENV
+          echo "RELEASE_TITLE=$(cat release_info/release_title.txt)" >> $GITHUB_ENV
+          
+          # 检查文件是否下载成功
+          ls -R
+
+      - name: 创建 Release 并发布
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.RELEASE_TITLE }}
+          body_path: release_info/release_body.md  # 直接读取 Markdown 文件
+          files: assets/*                          # 上传 assets 文件夹下的所有文件
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
