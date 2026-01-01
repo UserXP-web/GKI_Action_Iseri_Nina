@@ -1,7 +1,7 @@
 # GKI_Action_Iseri_Nina
 Self Use Kernel Build Workflow
 <p align="center">
-  <img src="docs/Iseri_Nina.jpg" width="200"/>
+  <img src="./Iseri_Nina.jpg" width="200"/>
 </p>
 [![Latest release](https://img.shields.io/github/v/release/frisk1127/GKI_Action_Iseri_Nina?label=Release&logo=github)](https://github.com/frisk1127/GKI_Action_Iseri_Nina/releases/latest)
 
