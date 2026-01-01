@@ -1,4 +1,4 @@
-name: Build GKI A12-5.10 (Fix Missing Files)
+name: Build GKI A12-5.10
 
 permissions:
   contents: write
