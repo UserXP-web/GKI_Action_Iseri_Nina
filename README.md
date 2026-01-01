@@ -1,4 +1,7 @@
 # GKI_Action_Iseri_Nina
+Self Use Kernel Build Workflow
+[![Latest release](https://img.shields.io/github/v/release/frisk1127/GKI_Action_Iseri_Nina?label=Release&logo=github)](https://github.com/frisk1127/GKI_Action_Iseri_Nina/releases/latest)
+
 ## Features
 1. Customizable kernel version（5.10.xxx）
 2. Customizable kernel sublevel（5.10.xxx-xxx）
