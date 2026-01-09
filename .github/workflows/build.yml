@@ -1,4 +1,4 @@
-name: Build GKI A12-5.10
+name: Build GKI A12-5.10-236
 
 permissions:
   contents: write
@@ -8,36 +8,37 @@ on:
   workflow_dispatch:
     inputs:
       tag_selection:
-        description: "选择内核版本 (格式: 子版本 | 补丁日期 | 修订号)"
+        description: "Select kernel version (format: sub-version | patch date | revision number)"
         required: true
         type: choice
         options:
           - "5.10.246 | 2025-12 | r1"
-          - "5.10.240 | 2025-09 | r2"
-          - "5.10.233 | 2025-02 | r5"
+          - "5.10.237 | 2025-06 | r5"
+          - "5.10.236 | 2025-05 | r7"
+          #- "5.10.233 | 2025-02 | r5"
           - "5.10.226 | 2024-11 | r8"
-          - "5.10.218 | 2024-08 | r14"
-          - "5.10.209 | 2024-05 | r13"
+          #- "5.10.218 | 2024-08 | r14"
+          #- "5.10.209 | 2024-05 | r13"
           - "Manual Input (See below)"
-        default: "5.10.233 | 2025-02 | r5"
+        default: "5.10.236 | 2025-05 | r7"
       
       manual_version:
-        description: "手动版本参数 (仅 Manual 模式生效, 格式: 5.10.233 2025-02 r5)"
+        description: "Manual version parameters (only effective in Manual mode, format: 5.10.233 2025-02 r5)"
         required: false
         type: string
       
       version:
-        description: '自定义版本名 (如 -MyKernel)'
+        description: 'Custom version name (e.g., -MyKernel)'
         required: false
         type: string
       
       build_time:
-        description: '设置内核构建时间 (留空使用当前时间)'
+        description: 'Set kernel build time (leave blank to use current time)'
         required: false
         type: string
 
       kernelsu_variant:
-        description: "选择 KernelSU 变体"
+        description: "Select KernelSU variant"
         required: true
         type: choice
         options:
@@ -47,7 +48,7 @@ on:
           - MKSU
         default: ReSukiSU
       kernelsu_branch:
-        description: "选择 ksu 分支"
+        description: "Choose KSU branch"
         required: true
         type: choice
         options:
@@ -56,17 +57,17 @@ on:
           - tmp-builtin
         default: Stable(标准)
       use_zram:
-        description: '开启更多 zram 算法?'
+        description: 'Enable more ZRAM algorithms?'
         required: true
         type: boolean
         default: true
       use_bbg:
-        description: '开启 BBG 防格机?'
+        description: 'Activate BBG anti-grinding device?'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: '开启 KPM?'
+        description: 'Enable KPM?'
         required: true
         type: boolean
         default: true
@@ -76,22 +77,22 @@ on:
         type: boolean
         default: true
       bypass_unicode:
-        description: '启用零宽空格修复?'
+        description: 'Enable zero-width space fix (bypass_unicode)?'
         required: true
         type: boolean
         default: true
       onlyAk3:
-        description: '仅上传 AK3 (不打包 boot.img)?'
+        description: 'Upload only AK3 (without boot.img)?'
         required: false
         type: boolean
         default: true
       cancel_susfs:
-        description: '取消 SUSFS'
+        description: 'Cancel SUSFS'
         required: true
         type: boolean
         default: false
       resukisu_multi_manager:
-        description: '使用原 SukiSU 管理器'
+        description: 'Use the original SukiSU manager (resukisu_multi_manager)'
         required: true
         type: boolean
         default: false
