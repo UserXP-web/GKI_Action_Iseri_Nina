@@ -161,7 +161,7 @@ jobs:
 
           NAME_INFO="${{ env.NAME_INFO }}"
           echo "NAME_INFO=$NAME_INFO"
-          NAME_INFO="$NAME_INFO_zram"
+          NAME_INFO="${{ NAME_INFO }}_zram"
           echo "NAME_INFO=$NAME_INFO"
           echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
           echo "NAME_INFO=$NAME_INFO"
