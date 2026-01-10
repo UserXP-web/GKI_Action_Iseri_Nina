@@ -322,9 +322,10 @@ jobs:
              NAME_INFO=""
           fi
 
+          echo "NAME_INFO=$NAME_INFO"
           echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
 
-      - name: 配置 (Config) Defconfig
+      - name: 配置 (Configure) Defconfig
         run: |
           NAME_INFO="${{ env.NAME_INFO }}"
           cd "$CONFIG"
@@ -377,6 +378,7 @@ jobs:
              echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
           fi
 
+          echo "NAME_INFO=$NAME_INFO"
           echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
           
           sed -i 's/check_defconfig//g' common/build.config.gki*          
