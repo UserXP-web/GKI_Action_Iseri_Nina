@@ -96,11 +96,6 @@ on:
         required: true
         type: boolean
         default: false
-      name_info:
-        description: 'Extra info at file name(s)'
-        required: true
-        type: string
-        default: ""
 
 jobs:
   build-kernel:
@@ -111,6 +106,7 @@ jobs:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
+      name_info: ""
 
     steps:
       - name: Maximize Build Space
@@ -321,9 +317,7 @@ jobs:
           if [ "${{ inputs.bypass_unicode }}" == "true" ]; then
              cp ../../xiaoxiaow_patch/common/unicode_bypass_fix_6.1-.patch ./
              patch -p1 -F 3 --fuzz=5 < unicode_bypass_fix_6.1-.patch || true
-             inputs.name_info="_uni"
-          else
-            inputs.name_info=""
+             env.name_info="_uni"
           fi
 
       - name: 配置 (Config) Defconfig
@@ -334,7 +328,7 @@ jobs:
           echo "CONFIG_WERROR=n" >> $DEFCONFIG
           if [[ "${{ inputs.kernelsu_variant }}" == *"SukiSU"* ]] && [[ "${{ inputs.use_kpm }}" == "true" ]]; then
              echo "CONFIG_KPM=y" >> $DEFCONFIG
-             inputs.name_info="${{ inputs.name_info }}_kpm"
+             env.name_info="${{ env.name_info }}_kpm"
           fi
           if [ "${{ inputs.use_zram }}" == "true" ]; then
              echo "CONFIG_ZSMALLOC=y" >> $DEFCONFIG
@@ -347,16 +341,16 @@ jobs:
              echo "CONFIG_CRYPTO_LZO=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4HC=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4KD=y" >> $DEFCONFIG
-             inputs.name_info="${{ inputs.name_info }}_zram"
+             env.name_info="${{ env.name_info }}_zram"
           fi
           if [ "${{ inputs.use_bbg }}" == "true" ]; then 
              echo "CONFIG_BBG=y" >> $DEFCONFIG;
-             inputs.name_info="${{ inputs.name_info }}_bbg"
+             env.name_info="${{ env.name_info }}_bbg"
           fi
           if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then 
              echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
              echo "CONFIG_TMPFS_POSIX_ACL=y" >> $DEFCONFIG
-             inputs.name_info="${{ inputs.name_info }}_tmpfs"
+             env.name_info="${{ env.name_info }}_tmpfs"
           fi
           if [ "${{ inputs.cancel_susfs }}" == "false" ]; then
              echo "CONFIG_KSU_SUSFS=y" >> $DEFCONFIG
@@ -372,7 +366,7 @@ jobs:
              echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> $DEFCONFIG
-             inputs.name_info="${{ inputs.name_info }}_susfs"
+             env.name_info="${{ env.name_info }}_susfs"
           fi
           if [[ "${{ inputs.resukisu_multi_manager }}" == "true" ]]; then
           echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
@@ -380,7 +374,7 @@ jobs:
           
           sed -i 's/check_defconfig//g' common/build.config.gki*
 
-          #if [[ "${{ inputs.name_info }}" != "" ]]; then inputs.name_info="_${{ inputs.name_info::-1 }}" fi
+          #if [[ "${{ env.name_info }}" != "" ]]; then env.name_info="_${{ env.name_info::-1 }}" fi
 
       - name: 设置构建时间与版本 (Set build time and version)
         run: |
@@ -426,7 +420,7 @@ jobs:
            
            cd AnyKernel3
            cp ../$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist/Image ./
-           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}${{ inputs.name_info }}.zip"
+           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}${{ env.name_info }}.zip"
            zip -r "$ZIP_NAME" ./*
            echo "ZIP_PATH=$GITHUB_WORKSPACE/AnyKernel3/$ZIP_NAME" >> $GITHUB_ENV
 
@@ -461,7 +455,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           #name: Kernel_Build_Output
-          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}${{ inputs.name_info }}
+          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}${{ env.name_info }}
           path: |
             ${{ env.ZIP_PATH }}
             *.img
