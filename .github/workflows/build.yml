@@ -309,7 +309,8 @@ jobs:
           if [ "${{ inputs.use_bbg }}" == "true" ]; then
             cd ..
             wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
-            sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' common/security/Kconfig
+            # sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' common/security/Kconfig
+            sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/bpf/bpf,baseband_guard/ } }' common/security/Kconfig
           fi
 
       - name: 绕过零宽空格检测 (Bypass zero-width space detection)
