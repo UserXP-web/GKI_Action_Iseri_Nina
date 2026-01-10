@@ -161,10 +161,14 @@ jobs:
 
           NAME_INFO="${{ env.NAME_INFO }}"
           echo "NAME_INFO=$NAME_INFO"
-          NAME_INFO="${{ NAME_INFO }}_zram"
+          NAME_INFO=$NAME_INFO_zram
           echo "NAME_INFO=$NAME_INFO"
           exit 1 && exit 1 &&
           exit 1
+
+
+
+
           
           sudo apt update && sudo apt install -y ccache python3 git curl build-essential libssl-dev bison flex libelf-dev dwarves
 
