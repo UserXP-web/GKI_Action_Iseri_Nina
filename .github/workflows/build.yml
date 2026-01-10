@@ -311,6 +311,20 @@ jobs:
             wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
             # sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' common/security/Kconfig
             sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/bpf/bpf,baseband_guard/ } }' common/security/Kconfig
+
+            # After sed: Show the updated LSM default line
+            echo "=== After sed ==="
+            sed -n '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ p }' common/security/Kconfig
+            
+            # Confirm baseband_guard is now present (should output the line if successful)
+            echo "=== Confirmation: grep for baseband_guard ==="
+            if ! grep -q "baseband_guard" common/security/Kconfig; then
+              echo "ERROR: baseband_guard not found after sed - stopping workflow"
+              exit 1
+            else
+              echo "SUCCESS: baseband_guard found in security configuration"
+              grep "baseband_guard" common/security/Kconfig
+            fi            
           fi
 
       - name: 绕过零宽空格检测 (Bypass zero-width space detection)
