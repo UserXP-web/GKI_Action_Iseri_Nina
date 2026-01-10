@@ -57,32 +57,32 @@ on:
           - tmp-builtin
         default: Stable(标准)
       use_zram:
-        description: 'Enable more ZRAM algorithms?'
+        description: 'Enable more ZRAM algorithms'
         required: true
         type: boolean
         default: true
       use_bbg:
-        description: 'Activate BBG anti-grinding device?'
+        description: 'Activate BBG anti-grinding device'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: 'Enable KPM?'
+        description: 'Enable KPM'
         required: true
         type: boolean
         default: true
       enable_tmpfs:
-        description: 'Enable tmpfs?'
+        description: 'Enable tmpfs'
         required: true
         type: boolean
         default: true
       bypass_unicode:
-        description: 'Enable zero-width space fix (bypass_unicode)?'
+        description: 'Enable zero-width space fix (bypass_unicode)'
         required: true
         type: boolean
         default: true
       onlyAk3:
-        description: 'Upload only AK3 (without boot.img)?'
+        description: 'Upload only AK3 (without boot.img)'
         required: false
         type: boolean
         default: true
