@@ -106,7 +106,7 @@ jobs:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      NAME_INFO: ""
+      NAME_INFO: "start"
 
     steps:
       - name: Maximize Build Space
@@ -144,6 +144,9 @@ jobs:
           echo "REVISION=$REV" >> $GITHUB_ENV
           echo "CONFIG=android12-5.10-$SUB_LEVEL" >> $GITHUB_ENV
 
+          echo "NAME_INFO=$NAME_INFO"
+          echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
+
       - name: 恢复 (recover) Ccache
         uses: actions/cache@v4
         with:
@@ -155,6 +158,23 @@ jobs:
 
       - name: 安装构建依赖 (Install build dependencies)
         run: sudo apt update && sudo apt install -y ccache python3 git curl build-essential libssl-dev bison flex libelf-dev dwarves
+
+
+
+
+          NAME_INFO="${{ env.NAME_INFO }}"
+          echo "NAME_INFO=$NAME_INFO"
+          NAME_INFO="$NAME_INFO_zram"
+          echo "NAME_INFO=$NAME_INFO"
+          echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
+          echo "NAME_INFO=$NAME_INFO"
+          exit 1111
+
+
+
+
+
+
 
       - name: 配置 (Configuration) Ccache
         run: |
