@@ -106,7 +106,7 @@ jobs:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      NAME_INFO: "start"
+      NAME_INFO: ""
 
     steps:
       - name: Maximize Build Space
@@ -144,9 +144,6 @@ jobs:
           echo "REVISION=$REV" >> $GITHUB_ENV
           echo "CONFIG=android12-5.10-$SUB_LEVEL" >> $GITHUB_ENV
 
-          echo "NAME_INFO=$NAME_INFO"
-          echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
-
       - name: 恢复 (recover) Ccache
         uses: actions/cache@v4
         with:
@@ -158,18 +155,6 @@ jobs:
 
       - name: 安装构建依赖 (Install build dependencies)
         run: |
-
-          NAME_INFO="${{ env.NAME_INFO }}"
-          echo "NAME_INFO=$NAME_INFO"
-          NAME_INFO="${NAME_INFO}_zram"
-          echo "NAME_INFO=$NAME_INFO"
-          exit 1 && exit 1 &&
-          exit 1
-
-
-
-
-          
           sudo apt update && sudo apt install -y ccache python3 git curl build-essential libssl-dev bison flex libelf-dev dwarves
 
       - name: 配置 (Configuration) Ccache
@@ -338,7 +323,6 @@ jobs:
              NAME_INFO=""
           fi
 
-          echo "NAME_INFO=$NAME_INFO"
           echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
 
       - name: 配置 (Configure) Defconfig
@@ -350,7 +334,7 @@ jobs:
           echo "CONFIG_WERROR=n" >> $DEFCONFIG
           if [[ "${{ inputs.kernelsu_variant }}" == *"SukiSU"* ]] && [[ "${{ inputs.use_kpm }}" == "true" ]]; then
              echo "CONFIG_KPM=y" >> $DEFCONFIG
-             NAME_INFO="$NAME_INFO_kpm"
+             NAME_INFO="${NAME_INFO}_kpm"
           fi
           if [ "${{ inputs.use_zram }}" == "true" ]; then
              echo "CONFIG_ZSMALLOC=y" >> $DEFCONFIG
@@ -363,16 +347,16 @@ jobs:
              echo "CONFIG_CRYPTO_LZO=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4HC=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4KD=y" >> $DEFCONFIG
-             NAME_INFO="$NAME_INFO_zram"
+             NAME_INFO="${NAME_INFO}_zram"
           fi
           if [ "${{ inputs.use_bbg }}" == "true" ]; then 
              echo "CONFIG_BBG=y" >> $DEFCONFIG;
-             NAME_INFO="$NAME_INFO_bbg"
+             NAME_INFO="${NAME_INFO}_bbg"
           fi
           if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then 
              echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
              echo "CONFIG_TMPFS_POSIX_ACL=y" >> $DEFCONFIG
-             NAME_INFO="$NAME_INFO_tmpfs"
+             NAME_INFO="${NAME_INFO}_tmpfs"
           fi
           if [ "${{ inputs.cancel_susfs }}" == "false" ]; then
              echo "CONFIG_KSU_SUSFS=y" >> $DEFCONFIG
@@ -388,13 +372,12 @@ jobs:
              echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> $DEFCONFIG
-             NAME_INFO="$NAME_INFO_susfs"
+             NAME_INFO="${NAME_INFO}_susfs"
           fi
           if [[ "${{ inputs.resukisu_multi_manager }}" == "true" ]]; then
              echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
           fi
 
-          echo "NAME_INFO=$NAME_INFO"
           echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
           
           sed -i 's/check_defconfig//g' common/build.config.gki*          
