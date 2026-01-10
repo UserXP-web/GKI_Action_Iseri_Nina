@@ -106,7 +106,7 @@ jobs:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      name_info: ""
+      NAME_INFO: ""
 
     steps:
       - name: Maximize Build Space
@@ -317,18 +317,23 @@ jobs:
           if [ "${{ inputs.bypass_unicode }}" == "true" ]; then
              cp ../../xiaoxiaow_patch/common/unicode_bypass_fix_6.1-.patch ./
              patch -p1 -F 3 --fuzz=5 < unicode_bypass_fix_6.1-.patch || true
-             env.name_info="_uni"
+             NAME_INFO="_uni"
+          else
+             NAME_INFO=""
           fi
+
+          echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
 
       - name: 配置 (Config) Defconfig
         run: |
+          NAME_INFO="${{ env.NAME_INFO }}"
           cd "$CONFIG"
           DEFCONFIG="common/arch/arm64/configs/gki_defconfig"
           echo "CONFIG_KSU=y" >> $DEFCONFIG
           echo "CONFIG_WERROR=n" >> $DEFCONFIG
           if [[ "${{ inputs.kernelsu_variant }}" == *"SukiSU"* ]] && [[ "${{ inputs.use_kpm }}" == "true" ]]; then
              echo "CONFIG_KPM=y" >> $DEFCONFIG
-             env.name_info="${{ env.name_info }}_kpm"
+             NAME_INFO="$NAME_INFO_kpm"
           fi
           if [ "${{ inputs.use_zram }}" == "true" ]; then
              echo "CONFIG_ZSMALLOC=y" >> $DEFCONFIG
@@ -341,16 +346,16 @@ jobs:
              echo "CONFIG_CRYPTO_LZO=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4HC=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4KD=y" >> $DEFCONFIG
-             env.name_info="${{ env.name_info }}_zram"
+             NAME_INFO="$NAME_INFO_zram"
           fi
           if [ "${{ inputs.use_bbg }}" == "true" ]; then 
              echo "CONFIG_BBG=y" >> $DEFCONFIG;
-             env.name_info="${{ env.name_info }}_bbg"
+             NAME_INFO="$NAME_INFO_bbg"
           fi
           if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then 
              echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
              echo "CONFIG_TMPFS_POSIX_ACL=y" >> $DEFCONFIG
-             env.name_info="${{ env.name_info }}_tmpfs"
+             NAME_INFO="$NAME_INFO_tmpfs"
           fi
           if [ "${{ inputs.cancel_susfs }}" == "false" ]; then
              echo "CONFIG_KSU_SUSFS=y" >> $DEFCONFIG
@@ -366,11 +371,13 @@ jobs:
              echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> $DEFCONFIG
-             env.name_info="${{ env.name_info }}_susfs"
+             NAME_INFO="$NAME_INFO_susfs"
           fi
           if [[ "${{ inputs.resukisu_multi_manager }}" == "true" ]]; then
              echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
           fi
+
+          echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
           
           sed -i 's/check_defconfig//g' common/build.config.gki*          
 
@@ -418,7 +425,7 @@ jobs:
            
            cd AnyKernel3
            cp ../$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist/Image ./
-           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}${{ env.name_info }}.zip"
+           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}${{ env.NAME_INFO }}.zip"
            zip -r "$ZIP_NAME" ./*
            echo "ZIP_PATH=$GITHUB_WORKSPACE/AnyKernel3/$ZIP_NAME" >> $GITHUB_ENV
 
@@ -453,7 +460,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           #name: Kernel_Build_Output
-          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}${{ env.name_info }}
+          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}${{ env.NAME_INFO }}
           path: |
             ${{ env.ZIP_PATH }}
             *.img
