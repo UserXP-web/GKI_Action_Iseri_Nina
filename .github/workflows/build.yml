@@ -314,8 +314,11 @@ jobs:
         run: |
           cd "$CONFIG/common"
           if [ "${{ inputs.bypass_unicode }}" == "true" ]; then
-          cp ../../xiaoxiaow_patch/common/unicode_bypass_fix_6.1-.patch ./
-          patch -p1 -F 3 --fuzz=5 < unicode_bypass_fix_6.1-.patch || true
+             cp ../../xiaoxiaow_patch/common/unicode_bypass_fix_6.1-.patch ./
+             patch -p1 -F 3 --fuzz=5 < unicode_bypass_fix_6.1-.patch || true
+             NAME_INFO="_uni"
+          else
+            NAME_INFO=""
           fi
 
       - name: 配置 (Config) Defconfig
@@ -326,9 +329,7 @@ jobs:
           echo "CONFIG_WERROR=n" >> $DEFCONFIG
           if [[ "${{ inputs.kernelsu_variant }}" == *"SukiSU"* ]] && [[ "${{ inputs.use_kpm }}" == "true" ]]; then
              echo "CONFIG_KPM=y" >> $DEFCONFIG
-             NAME_INFO="kpm_"
-          else
-             NAME_INFO=""
+             NAME_INFO="${{ NAME_INFO }}_kpm"
           fi
           if [ "${{ inputs.use_zram }}" == "true" ]; then
              echo "CONFIG_ZSMALLOC=y" >> $DEFCONFIG
@@ -341,16 +342,16 @@ jobs:
              echo "CONFIG_CRYPTO_LZO=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4HC=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4KD=y" >> $DEFCONFIG
-             NAME_INFO="${{ NAME_INFO }}zram_"
+             NAME_INFO="${{ NAME_INFO }}_zram"
           fi
           if [ "${{ inputs.use_bbg }}" == "true" ]; then 
              echo "CONFIG_BBG=y" >> $DEFCONFIG;
-             NAME_INFO="${{ NAME_INFO }}bbg_"
+             NAME_INFO="${{ NAME_INFO }}_bbg"
           fi
           if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then 
              echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
              echo "CONFIG_TMPFS_POSIX_ACL=y" >> $DEFCONFIG
-             NAME_INFO="${{ NAME_INFO }}tmpfs_"
+             NAME_INFO="${{ NAME_INFO }}_tmpfs"
           fi
           if [ "${{ inputs.cancel_susfs }}" == "false" ]; then
              echo "CONFIG_KSU_SUSFS=y" >> $DEFCONFIG
@@ -366,7 +367,7 @@ jobs:
              echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> $DEFCONFIG
-             NAME_INFO="${{ NAME_INFO }}susfs_"
+             NAME_INFO="${{ NAME_INFO }}_susfs"
           fi
           if [[ "${{ inputs.resukisu_multi_manager }}" == "true" ]]; then
           echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
@@ -374,7 +375,7 @@ jobs:
           
           sed -i 's/check_defconfig//g' common/build.config.gki*
 
-          if [[ "${{ NAME_INFO }}" != "" ]]; then NAME_INFO="_${{ NAME_INFO::-1 }}" fi
+          #if [[ "${{ NAME_INFO }}" != "" ]]; then NAME_INFO="_${{ NAME_INFO::-1 }}" fi
 
       - name: 设置构建时间与版本 (Set build time and version)
         run: |
