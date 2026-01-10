@@ -157,10 +157,7 @@ jobs:
             ccache-gki-
 
       - name: 安装构建依赖 (Install build dependencies)
-        run: sudo apt update && sudo apt install -y ccache python3 git curl build-essential libssl-dev bison flex libelf-dev dwarves
-
-
-
+        run: |
 
           NAME_INFO="${{ env.NAME_INFO }}"
           echo "NAME_INFO=$NAME_INFO"
@@ -168,13 +165,10 @@ jobs:
           echo "NAME_INFO=$NAME_INFO"
           echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
           echo "NAME_INFO=$NAME_INFO"
-          exit 1111
-
-
-
-
-
-
+          exit 1 && exit 1 &&
+          exit 1
+          
+          sudo apt update && sudo apt install -y ccache python3 git curl build-essential libssl-dev bison flex libelf-dev dwarves
 
       - name: 配置 (Configuration) Ccache
         run: |
