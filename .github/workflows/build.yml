@@ -120,7 +120,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: 解析版本参数
+      - name: 解析版本参数 (Parse version parameters)
         run: |
           SELECTION="${{ inputs.tag_selection }}"
           MANUAL="${{ inputs.manual_version }}"
@@ -143,7 +143,7 @@ jobs:
           echo "REVISION=$REV" >> $GITHUB_ENV
           echo "CONFIG=android12-5.10-$SUB_LEVEL" >> $GITHUB_ENV
 
-      - name: 恢复 Ccache
+      - name: 恢复 (recover) Ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
@@ -152,10 +152,10 @@ jobs:
             ccache-gki-${{ env.SUB_LEVEL }}-
             ccache-gki-
 
-      - name: 安装构建依赖
+      - name: 安装构建依赖 (Install build dependencies)
         run: sudo apt update && sudo apt install -y ccache python3 git curl build-essential libssl-dev bison flex libelf-dev dwarves
 
-      - name: 配置 Ccache
+      - name: 配置 (Configuration) Ccache
         run: |
           mkdir -p ~/.ccache
           echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
@@ -169,7 +169,7 @@ jobs:
           # 清零统计数据
           ccache -z
 
-      - name: 下载工具链
+      - name: 下载工具链 (Download toolchain)
         run: |
           mkdir -p ./git-repo
           curl https://storage.googleapis.com/git-repo-downloads/repo > ./git-repo/repo
@@ -188,7 +188,7 @@ jobs:
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
           echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
 
-      - name: 克隆patch仓库
+      - name: 克隆patch仓库 (Clone patch repository)
         run: |
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "gki-2.0"
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
@@ -202,7 +202,7 @@ jobs:
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}"
           fi
 
-      - name: 同步内核源码
+      - name: 同步内核源码 (Synchronize kernel source code)
         run: |
           mkdir -p "$CONFIG"
           cd "$CONFIG"
@@ -219,7 +219,7 @@ jobs:
              $REPO sync -c -j$(nproc --all) --fail-fast
           fi
 
-      - name: 确定 KernelSU 参数
+      - name: 确定 KernelSU 参数 (Determine KernelSU parameters)
         run: |
           VAR="${{ inputs.kernelsu_variant }}"
           BR="${{ inputs.kernelsu_branch }}"
@@ -233,7 +233,7 @@ jobs:
           fi
           echo "KSU_ARGS=$ARG" >> $GITHUB_ENV
 
-      - name: 注入 KernelSU
+      - name: 注入 (Inject) KernelSU
         run: |
           cd "$CONFIG"
           case "${{ inputs.kernelsu_variant }}" in
@@ -244,7 +244,7 @@ jobs:
           esac
           curl -LSs "$URL" | bash -s ${{ env.KSU_ARGS }}
 
-      - name: 注入 SUSFS
+      - name: 注入 (Inject) SUSFS
         if: ${{ !inputs.cancel_susfs }}
         run: |
           set -e
@@ -263,7 +263,7 @@ jobs:
           cd common
           patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
 
-      - name: 注入 ZRAM/BBG 补丁
+      - name: 注入 ZRAM/BBG 补丁 (Inject ZRAM/BBG patch)
         run: |
           cd "$CONFIG/common"
           
@@ -310,7 +310,7 @@ jobs:
             sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' common/security/Kconfig
           fi
 
-      - name: 绕过零宽空格检测
+      - name: 绕过零宽空格检测 (Bypass zero-width space detection)
         run: |
           cd "$CONFIG/common"
           if [ "${{ inputs.bypass_unicode }}" == "true" ]; then
@@ -318,7 +318,7 @@ jobs:
           patch -p1 -F 3 --fuzz=5 < unicode_bypass_fix_6.1-.patch || true
           fi
 
-      - name: 配置 Defconfig
+      - name: 配置 (Config) Defconfig
         run: |
           cd "$CONFIG"
           DEFCONFIG="common/arch/arm64/configs/gki_defconfig"
@@ -326,6 +326,9 @@ jobs:
           echo "CONFIG_WERROR=n" >> $DEFCONFIG
           if [[ "${{ inputs.kernelsu_variant }}" == *"SukiSU"* ]] && [[ "${{ inputs.use_kpm }}" == "true" ]]; then
              echo "CONFIG_KPM=y" >> $DEFCONFIG
+             NAME_INFO="kpm_"
+          else
+             NAME_INFO=""
           fi
           if [ "${{ inputs.use_zram }}" == "true" ]; then
              echo "CONFIG_ZSMALLOC=y" >> $DEFCONFIG
@@ -338,11 +341,16 @@ jobs:
              echo "CONFIG_CRYPTO_LZO=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4HC=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4KD=y" >> $DEFCONFIG
+             NAME_INFO="${{ NAME_INFO }}zram_"
           fi
-          if [ "${{ inputs.use_bbg }}" == "true" ]; then echo "CONFIG_BBG=y" >> $DEFCONFIG; fi
+          if [ "${{ inputs.use_bbg }}" == "true" ]; then 
+             echo "CONFIG_BBG=y" >> $DEFCONFIG;
+             NAME_INFO="${{ NAME_INFO }}bbg_"
+          fi
           if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then 
              echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
              echo "CONFIG_TMPFS_POSIX_ACL=y" >> $DEFCONFIG
+             NAME_INFO="${{ NAME_INFO }}tmpfs_"
           fi
           if [ "${{ inputs.cancel_susfs }}" == "false" ]; then
              echo "CONFIG_KSU_SUSFS=y" >> $DEFCONFIG
@@ -358,6 +366,7 @@ jobs:
              echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $DEFCONFIG
              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> $DEFCONFIG
+             NAME_INFO="${{ NAME_INFO }}susfs_"
           fi
           if [[ "${{ inputs.resukisu_multi_manager }}" == "true" ]]; then
           echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
@@ -365,7 +374,9 @@ jobs:
           
           sed -i 's/check_defconfig//g' common/build.config.gki*
 
-      - name: 设置构建时间与版本
+          if [[ "${{ NAME_INFO }}" != "" ]]; then NAME_INFO="_${{ NAME_INFO::-1 }}" fi
+
+      - name: 设置构建时间与版本 (Set build time and version)
         run: |
           cd "$CONFIG"
           if [ -n "${{ inputs.build_time }}" ]; then
@@ -379,7 +390,7 @@ jobs:
              sed -i '/^CONFIG_LOCALVERSION=/ s/="\([^"]*\)"/="${{ inputs.version }}"/' common/arch/arm64/configs/gki_defconfig
           fi
 
-      - name: 编译内核
+      - name: 编译内核 (Compile kernel)
         run: |
           cd "$CONFIG"
           sed -i 's/BUILD_SYSTEM_DLKM=1/BUILD_SYSTEM_DLKM=0/' ./common/build.config.gki.aarch64
@@ -409,11 +420,11 @@ jobs:
            
            cd AnyKernel3
            cp ../$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist/Image ./
-           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}.zip"
+           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}${{ NAME_INFO }}.zip"
            zip -r "$ZIP_NAME" ./*
            echo "ZIP_PATH=$GITHUB_WORKSPACE/AnyKernel3/$ZIP_NAME" >> $GITHUB_ENV
 
-      - name: 编译 Boot.img
+      - name: 编译 (Compile) Boot.img
         if: ${{ inputs.onlyAk3 == false }}
         run: |
           cd "$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist"
@@ -440,16 +451,16 @@ jobs:
           
           mv boot-new.img $GITHUB_WORKSPACE/boot.img
 
-      - name: 上传产物
+      - name: 上传产物 (Upload artifacts)
         uses: actions/upload-artifact@v4
         with:
           #name: Kernel_Build_Output
-          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}
+          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}${{ NAME_INFO }}
           path: |
             ${{ env.ZIP_PATH }}
             *.img
 
-      - name: 保存 Release 元数据
+      - name: 保存 Release 元数据 (Save Release metadata)
         run: |
           mkdir -p release_info
           
@@ -476,7 +487,7 @@ jobs:
           _Built by Github Actions (Run #${{ github.run_number }})_
           EOF
 
-      - name: 上传元数据
+      - name: 上传元数据 (Upload metadata)
         uses: actions/upload-artifact@v4
         with:
           name: release_metadata
