@@ -13,11 +13,12 @@ on:
         type: choice
         options:
           - "5.10.246 | 2025-12 | r1"
-          - "5.10.240 | 2025-09 | r2"
-          - "5.10.233 | 2025-02 | r5"
+          - "5.10.237 | 2025-06 | r5"
+          - "5.10.236 | 2025-05 | r7"
+          #- "5.10.233 | 2025-02 | r5"
           - "5.10.226 | 2024-11 | r8"
-          - "5.10.218 | 2024-08 | r14"
-          - "5.10.209 | 2024-05 | r13"
+          #- "5.10.218 | 2024-08 | r14"
+          #- "5.10.209 | 2024-05 | r13"
           - "Manual Input (See below)"
         default: "5.10.233 | 2025-02 | r5"
       
@@ -76,7 +77,7 @@ on:
         type: boolean
         default: true
       bypass_unicode:
-        description: '启用零宽空格修复?'
+        description: '启用零宽空格修复? (bypass_unicode)'
         required: true
         type: boolean
         default: true
@@ -141,6 +142,14 @@ jobs:
           echo "OS_PATCH_LEVEL=$OS_PATCH" >> $GITHUB_ENV
           echo "REVISION=$REV" >> $GITHUB_ENV
           echo "CONFIG=android12-5.10-$SUB_LEVEL" >> $GITHUB_ENV
+
+          NAME_INFO=""
+          if [ ${{ !inputs.cancel_susfs }} ]; then NAME_INFO="_uni"; fi
+          if [ ${{ inputs.use_zram }} ]; then NAME_INFO="${NAME_INFO}_zram"; fi
+          if [ ${{ inputs.use_bbg }} ]; then NAME_INFO="${NAME_INFO}_bbg"; fi
+          if [ ${{ inputs.use_kpm }} ]; then NAME_INFO="${NAME_INFO}_kpm"; fi
+          if [ ${{ !inputs.cancel_susfs }} ]; then NAME_INFO="${NAME_INFO}_susfs"; fi
+          echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
 
       - name: 恢复 Ccache
         uses: actions/cache@v4
@@ -428,7 +437,7 @@ jobs:
            
            cd AnyKernel3
            cp ../$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist/Image ./
-           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}.zip"
+           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}${{ env.NAME_INFO }}.zip"
            zip -r "$ZIP_NAME" ./*
            echo "ZIP_PATH=$GITHUB_WORKSPACE/AnyKernel3/$ZIP_NAME" >> $GITHUB_ENV
 
@@ -462,7 +471,8 @@ jobs:
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: Kernel_Build_Output
+          #name: Kernel_Build_Output
+          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}${{ env.NAME_INFO }}
           path: |
             ${{ env.ZIP_PATH }}
             *.img
