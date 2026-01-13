@@ -148,6 +148,7 @@ jobs:
           if [ ${{ inputs.use_zram }} ]; then NAME_INFO="${NAME_INFO}_zram"; fi
           if [ ${{ inputs.use_bbg }} ]; then NAME_INFO="${NAME_INFO}_bbg"; fi
           if [ ${{ inputs.use_kpm }} ]; then NAME_INFO="${NAME_INFO}_kpm"; fi
+          if [ ${{ inputs.enable_tmpfs }} ]; then NAME_INFO="${NAME_INFO}_tmpfs"; fi
           if [ ${{ !inputs.cancel_susfs }} ]; then NAME_INFO="${NAME_INFO}_susfs"; fi
           echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
 
