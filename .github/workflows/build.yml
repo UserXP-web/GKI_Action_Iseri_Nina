@@ -247,7 +247,8 @@ jobs:
           cd "$CONFIG"
           case "${{ inputs.kernelsu_variant }}" in
             "Official") URL="https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" ;;
-            "ReSukiSU") URL="https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" ;;
+            #"ReSukiSU") URL="https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" ;;
+            "ReSukiSU") URL="https://raw.githubusercontent.com/UserXP-web/ReSukiSU/main/kernel/setup.sh" ;;
             #"ReSukiSU") URL="https://raw.githubusercontent.com/UserXP-web/GKI_Action_Iseri_Nina/refs/heads/main/ReSukiSU/setup.sh" ;;
             "MKSU")     URL="https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" ;;
             "SukiSU")   URL="https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" ;;
