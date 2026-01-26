@@ -13,13 +13,15 @@ on:
         type: choice
         options:
           - "5.10.246 | 2025-12 | r1"
-          - "5.10.240 | 2025-09 | r2"
-          - "5.10.233 | 2025-02 | r5"
+          #- "5.10.240 | 2025-09 | r2"
+          - "5.10.237 | 2025-06 | r5"
+          - "5.10.236 | 2025-05 | r7"
+          #- "5.10.233 | 2025-02 | r5"
           - "5.10.226 | 2024-11 | r8"
-          - "5.10.218 | 2024-08 | r14"
-          - "5.10.209 | 2024-05 | r13"
-          - "Manual Input (See below)"
-        default: "5.10.233 | 2025-02 | r5"
+          #- "5.10.218 | 2024-08 | r14"
+          #- "5.10.209 | 2024-05 | r13"
+          #- "Manual Input (See below)"
+        default: "5.10.236 | 2025-05 | r7"
       
       manual_version:
         description: "手动版本参数 (仅 Manual 模式生效, 格式: 5.10.233 2025-02 r5)"
@@ -142,6 +144,17 @@ jobs:
           echo "REVISION=$REV" >> $GITHUB_ENV
           echo "CONFIG=android12-5.10-$SUB_LEVEL" >> $GITHUB_ENV
 
+          NAME_INFO=""
+          if [ "${{ inputs.bypass_unicode }}" == "true" ]; then NAME_INFO="${NAME_INFO}_uni"; fi
+          #if [ "${{ inputs.cancel_susfs }}" == "false" ]; then NAME_INFO="${NAME_INFO}_uni"; fi
+          if [ "${{ inputs.use_zram }}" == "true" ]; then NAME_INFO="${NAME_INFO}_zram"; fi
+          if [ "${{ inputs.use_bbg }}" == "true" ]; then NAME_INFO="${NAME_INFO}_bbg"; fi
+          if [ "${{ inputs.use_kpm }}" == "true" ]; then NAME_INFO="${NAME_INFO}_kpm"; fi
+          if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then NAME_INFO="${NAME_INFO}_tmpfs"; fi
+          if [ "${{ inputs.cancel_susfs }}" == "false" ]; then NAME_INFO="${NAME_INFO}_susfs"; fi
+          echo "${{ inputs.kernelsu_variant }} NAME_INFO=$NAME_INFO"
+          echo "NAME_INFO=$NAME_INFO" >> $GITHUB_ENV
+          
       - name: 恢复 Ccache
         uses: actions/cache@v4
         with:
@@ -394,9 +407,24 @@ jobs:
           
           if [ "${{ inputs.use_bbg }}" == "true" ]; then echo "CONFIG_BBG=y" >> $DEFCONFIG; fi
           
-          if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then 
+          if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then
              echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
              echo "CONFIG_TMPFS_POSIX_ACL=y" >> $DEFCONFIG
+
+             #echo "CONFIG_EXT3_FS_XATTR=y" >> $DEFCONFIG
+             echo "CONFIG_EXT4_FS_XATTR=y" >> $DEFCONFIG
+             echo "CONFIG_EXT4_FS=y" >> $DEFCONFIG
+             echo "CONFIG_EXT4_FS_POSIX_ACL=y" >> $DEFCONFIG
+             echo "CONFIG_EXT4_FS_SECURITY=y" >> $DEFCONFIG
+             echo "CONFIG_EXT4_ENCRYPTION=y" >> $DEFCONFIG
+             echo "CONFIG_EXT4_FS_ENCRYPTION=y" >> $DEFCONFIG
+             # CONFIG_EXT4_DEBUG is not set
+             #echo "CONFIG_REISERFS_FS_XATTR=y" >> $DEFCONFIG
+             #echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
+             #echo "CONFIG_JFFS2_FS_XATTR=y" >> $DEFCONFIG
+             #echo "CONFIG_UBIFS_FS_XATTR=y" >> $DEFCONFIG
+             #echo "CONFIG_SQUASHFS_XATTR=y" >> $DEFCONFIG
+             #echo "CONFIG_CIFS_XATTR=y" >> $DEFCONFIG
           fi
           
           if [ "${{ inputs.cancel_susfs }}" == "false" ]; then
@@ -468,7 +496,7 @@ jobs:
            
            cd AnyKernel3
            cp ../$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist/Image ./
-           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}.zip"
+           ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}${{ env.NAME_INFO }}.zip"
            zip -r "$ZIP_NAME" ./*
            echo "ZIP_PATH=$GITHUB_WORKSPACE/AnyKernel3/$ZIP_NAME" >> $GITHUB_ENV
 
@@ -502,7 +530,8 @@ jobs:
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: Kernel_Build_Output
+          #name: Kernel_Build_Output
+          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}${{ env.NAME_INFO }}
           path: |
             ${{ env.ZIP_PATH }}
             *.img
