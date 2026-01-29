@@ -98,7 +98,7 @@ on:
         type: boolean
         default: false
       hymofs_support:
-        description: 'Enable support for HymoFS'
+        description: 'HymoFS support (kernels 5.15, 6.1 and 6.6 are supported)'
         required: true
         type: boolean
         default: false
