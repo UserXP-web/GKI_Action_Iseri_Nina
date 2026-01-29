@@ -230,8 +230,11 @@ jobs:
           MANIFEST_BRANCH="common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}-${{ env.OS_PATCH_LEVEL }}"
           echo "正在同步分支: $MANIFEST_BRANCH"
           
-          $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b $MANIFEST_BRANCH --repo-rev=v2.16
-          $REPO init --repo-rev=stable // ================================ ************************ ================================
+          if [ "${{ env.SUB_LEVEL }}" == "198" || "${{ env.SUB_LEVEL }}" == "209" ]; then
+            $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b $MANIFEST_BRANCH --repo-rev=stable
+          else
+            $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b $MANIFEST_BRANCH --repo-rev=v2.16
+          fi
           
           if ! $REPO sync -c -j$(nproc --all) --fail-fast; then
              echo "错误: 无法同步分支 $MANIFEST_BRANCH，尝试通用分支..."
