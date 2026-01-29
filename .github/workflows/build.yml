@@ -335,18 +335,18 @@ jobs:
       - name: HymoFS support
         if: ${{ inputs.hymofs_support }}
         run: |
-          	echo "[💠] Getting HymoFS"
-          	
-          	cd "$CONFIG/common" # cd $KERNEL_DIR
-          	if [ "${{ inputs.cancel_susfs }}" == "true" ]; then 
-          		curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/android14_6.1/patch/hymofs.patch > hymofs.patch
-          	else
-          		curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/android14_6.1/patch/hymofs_with_susfs.patch > hymofs.patch
-          	fi
-          	echo "[💠] Patching Kernel for HymoFS"
-          	patch -p1 --fuzz=3 < hymofs.patch # patch -p1 --fuzz=3 < hymofs.patch
-          	
-            echo "[✅] Done."
+          echo "[💠] Getting HymoFS"
+          
+          cd "$CONFIG/common" # cd $KERNEL_DIR
+          if [ "${{ inputs.cancel_susfs }}" == "true" ]; then 
+            curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/android14_6.1/patch/hymofs.patch > hymofs.patch
+          else
+            curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/android14_6.1/patch/hymofs_with_susfs.patch > hymofs.patch
+          fi
+          echo "[💠] Patching Kernel for HymoFS"
+          patch -p1 --fuzz=3 < hymofs.patch # patch -p1 --fuzz=3 < hymofs.patch
+          
+          echo "[✅] Done."
 
       - name: 注入 ZRAM/BBG 补丁
         run: |
