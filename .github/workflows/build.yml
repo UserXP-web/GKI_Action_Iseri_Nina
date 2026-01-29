@@ -101,7 +101,7 @@ on:
         description: 'Enable support for HymoFS'
         required: true
         type: boolean
-        default: true
+        default: false
 
 
 jobs:
@@ -336,15 +336,18 @@ jobs:
         if: ${{ inputs.hymofs_support }}
         run: |
           echo "[💠] Getting HymoFS"
-          
-          cd "$CONFIG/common" # cd $KERNEL_DIR
-          if [ "${{ inputs.cancel_susfs }}" == "true" ]; then 
-            curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/android14_6.1/patch/hymofs.patch > hymofs.patch
-          else
-            curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/android14_6.1/patch/hymofs_with_susfs.patch > hymofs.patch
-          fi
+
+          # HymoFS One-Line Setup Script
+          # Usage: curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/main/setup.sh | bash -s defconfig arch/arm64/configs/gki_defconfig with-susfs
+
           echo "[💠] Patching Kernel for HymoFS"
-          patch -p1 --fuzz=3 < hymofs.patch # patch -p1 --fuzz=3 < hymofs.patch
+          cd "$CONFIG/common" # cd $KERNEL_DIR          
+          if [ "${{ inputs.cancel_susfs }}" == "true" ]; then 
+            curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/main/setup.sh | bash -s defconfig arch/arm64/configs/gki_defconfig
+          else
+            curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/main/setup.sh | bash -s defconfig arch/arm64/configs/gki_defconfig with-susfs
+          fi          
+          #patch -p1 --fuzz=3 < hymofs.patch # patch -p1 --fuzz=3 < hymofs.patch
           
           echo "[✅] Done."
 
