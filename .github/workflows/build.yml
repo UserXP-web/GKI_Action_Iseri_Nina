@@ -374,6 +374,14 @@ jobs:
           DEFCONFIG="common/arch/arm64/configs/gki_defconfig"
           echo "CONFIG_KSU=y" >> $DEFCONFIG
           echo "CONFIG_WERROR=n" >> $DEFCONFIG
+          echo "CONFIG_PSTORE=y" >> $DEFCONFIG
+          echo "CONFIG_RAMOOPS=y" >> $DEFCONFIG
+          echo "CONFIG_PSTORE_RAM=y" >> $DEFCONFIG
+          echo "CONFIG_PSTORE_PMSG=y" >> $DEFCONFIG
+          echo "CONFIG_PSTORE_ZONE=y" >> $DEFCONFIG
+          echo "CONFIG_MAGIC_SYSRQ=y" >> $DEFCONFIG
+          echo "CONFIG_PSTORE_FTRACE=y" >> $DEFCONFIG
+          echo "CONFIG_PSTORE_CONSOLE=y" >> $DEFCONFIG
           
           if [[ "${{ inputs.kernelsu_variant }}" == *"SukiSU"* ]] && [[ "${{ inputs.use_kpm }}" == "true" ]]; then
              echo "CONFIG_KPM=y" >> $DEFCONFIG
