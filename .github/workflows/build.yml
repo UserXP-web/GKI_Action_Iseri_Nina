@@ -4,7 +4,7 @@ permissions:
   contents: write
   actions: write
 
-on:
+"on":
   workflow_dispatch:
     inputs:
       tag_selection:
@@ -20,19 +20,19 @@ on:
           - "5.10.209 | 2024-05 | r13"
           - "Manual Input (See below)"
         default: "5.10.233 | 2025-02 | r5"
-      
+
       manual_version:
         description: "手动版本参数 (仅 Manual 模式生效, 格式: 5.10.233 2025-02 r5)"
         required: false
         type: string
-      
+
       version:
-        description: '自定义版本名 (如 -MyKernel)'
+        description: "自定义版本名 (如 -MyKernel)"
         required: false
         type: string
-      
+
       build_time:
-        description: '设置内核构建时间 (留空使用当前时间)'
+        description: "设置内核构建时间 (留空使用当前时间)"
         required: false
         type: string
 
@@ -46,52 +46,71 @@ on:
           - Official
           - MKSU
         default: ReSukiSU
+
       kernelsu_branch:
         description: "选择 ksu 分支"
         required: true
         type: choice
         options:
-          - Stable(标准)
-          - Dev(开发)
+          - "Stable(标准)"
+          - "Dev(开发)"
           - tmp-builtin
-        default: Stable(标准)
+        default: "Stable(标准)"
+
+      resukisu_ref:
+        description: "ReSukiSU 指定 ref/commit (仅 ReSukiSU 生效, 留空使用默认 main)"
+        required: false
+        type: string
+
+      susfs_ref:
+        description: "susfs4ksu 指定 ref/commit (仅启用 SUSFS 生效, 留空使用默认分支)"
+        required: false
+        type: string
+
       use_zram:
-        description: '开启更多 zram 算法?'
+        description: "开启更多 zram 算法?"
         required: true
         type: boolean
         default: true
+
       use_bbg:
-        description: '开启 BBG 防格机?'
+        description: "开启 BBG 防格机?"
         required: true
         type: boolean
         default: true
+
       use_kpm:
-        description: '开启 KPM?'
+        description: "开启 KPM?"
         required: true
         type: boolean
         default: true
+
       enable_tmpfs:
-        description: '启用 tmpfs?'
+        description: "启用 tmpfs?"
         required: true
         type: boolean
         default: true
+
       bypass_unicode:
-        description: '启用零宽空格修复?'
+        description: "启用零宽空格修复?"
         required: true
         type: boolean
         default: true
+
       onlyAk3:
-        description: '仅上传 AK3 (不打包 boot.img)?'
+        description: "仅上传 AK3 (不打包 boot.img)?"
         required: false
         type: boolean
         default: true
+
       cancel_susfs:
-        description: '取消 SUSFS'
+        description: "取消 SUSFS"
         required: true
         type: boolean
         default: false
+
       resukisu_multi_manager:
-        description: '使用原 SukiSU 管理器'
+        description: "使用原 SukiSU 管理器"
         required: true
         type: boolean
         default: false
@@ -110,20 +129,20 @@ jobs:
       - name: Maximize Build Space
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          verbose: 'false'
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          verbose: "false"
 
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: 解析版本参数
         run: |
           SELECTION="${{ inputs.tag_selection }}"
           MANUAL="${{ inputs.manual_version }}"
-          
+
           if [[ "$SELECTION" == "Manual Input"* ]] && [[ -n "$MANUAL" ]]; then
             echo "使用手动输入的版本: $MANUAL"
             SUB_LEVEL=$(echo "$MANUAL" | awk '{print $1}' | cut -d. -f3)
@@ -158,13 +177,13 @@ jobs:
         run: |
           mkdir -p ~/.ccache
           echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-          
+
           # 设置最大缓存 10G
           ccache -M 10G
           ccache --set-config=sloppiness=time_macros,file_macro,include_file_ctime,include_file_mtime
           ccache --set-config=compiler_check=content
           ccache --set-config=compression=true
-          
+
           # 清零统计数据
           ccache -z
 
@@ -174,16 +193,16 @@ jobs:
           curl https://storage.googleapis.com/git-repo-downloads/repo > ./git-repo/repo
           chmod a+rx ./git-repo/repo
           echo "REPO=$GITHUB_WORKSPACE/git-repo/repo" >> $GITHUB_ENV
-          
+
           AOSP_MIRROR=https://android.googlesource.com
           BRANCH=main-kernel-build-2024
           git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
           git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth 1 mkbootimg
-          
+
           echo "MKBOOTIMG=$GITHUB_WORKSPACE/mkbootimg/mkbootimg.py" >> $GITHUB_ENV
           echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV
           echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
-          
+
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
           echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
 
@@ -194,11 +213,24 @@ jobs:
           git clone https://github.com/zzh20188/GKI_KernelSU_SUSFS.git zzh_patch
           git clone https://github.com/Numbersf/Action-Build.git --depth=1
           git clone https://github.com/Xiaomichael/kernel_patches.git xiaoxiaow_patch
-          
-          if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ] || [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
-            git clone https://github.com/ShirkNeko/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}"
+
+          if [ "${{ inputs.cancel_susfs }}" != "true" ]; then
+            if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ] || [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+              git clone https://github.com/ShirkNeko/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}" susfs4ksu
+            else
+              git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}" susfs4ksu
+            fi
+
+            if [ -n "${{ inputs.susfs_ref }}" ]; then
+              echo "SUSFS: checkout 指定 ref/commit: ${{ inputs.susfs_ref }}"
+              cd susfs4ksu
+              # 支持 commit hash/tag/branch
+              git fetch --tags --force origin || true
+              git checkout "${{ inputs.susfs_ref }}" || (git fetch --force origin "${{ inputs.susfs_ref }}" && git checkout FETCH_HEAD)
+              cd ..
+            fi
           else
-            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}"
+            echo "已取消 SUSFS，跳过 susfs4ksu 克隆/checkout"
           fi
 
       - name: 同步内核源码
@@ -209,9 +241,9 @@ jobs:
 
           MANIFEST_BRANCH="common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}-${{ env.OS_PATCH_LEVEL }}"
           echo "正在同步分支: $MANIFEST_BRANCH"
-          
+
           $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b $MANIFEST_BRANCH --repo-rev=v2.16
-          
+
           if ! $REPO sync -c -j$(nproc --all) --fail-fast; then
              echo "错误: 无法同步分支 $MANIFEST_BRANCH，尝试通用分支..."
              $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
@@ -234,14 +266,29 @@ jobs:
 
       - name: 注入 KernelSU
         run: |
+          set -e
           cd "$CONFIG"
-          case "${{ inputs.kernelsu_variant }}" in
-            "Official") URL="https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" ;;
-            "ReSukiSU") URL="https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" ;;
-            "MKSU")     URL="https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" ;;
-            "SukiSU")   URL="https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" ;;
-          esac
-          curl -LSs "$URL" | bash -s ${{ env.KSU_ARGS }}
+
+          VAR="${{ inputs.kernelsu_variant }}"
+          RESUKISU_REF="${{ inputs.resukisu_ref }}"
+
+          if [[ "$VAR" == "ReSukiSU" && -n "$RESUKISU_REF" ]]; then
+            echo "ReSukiSU: 使用指定 ref/commit: $RESUKISU_REF"
+            git clone https://github.com/ReSukiSU/ReSukiSU.git resukisu_src
+            cd resukisu_src
+            git fetch --tags --force origin || true
+            git checkout "$RESUKISU_REF" || (git fetch --force origin "$RESUKISU_REF" && git checkout FETCH_HEAD)
+            cd ..
+            bash ./resukisu_src/kernel/setup.sh $KSU_ARGS
+          else
+            case "$VAR" in
+              "Official") URL="https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" ;;
+              "ReSukiSU") URL="https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" ;;
+              "MKSU")     URL="https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" ;;
+              "SukiSU")   URL="https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" ;;
+            esac
+            curl -LSs "$URL" | bash -s $KSU_ARGS
+          fi
 
       - name: 注入 SUSFS
         if: ${{ !inputs.cancel_susfs }}
@@ -252,13 +299,6 @@ jobs:
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
-          #KSU_DIR=$(find . -maxdepth 1 -type d -name "KernelSU*" | head -n 1)
-          #if [ -n "$KSU_DIR" ]; then
-          #  cd "$KSU_DIR"
-          #  cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
-          #  patch -p1 --fuzz=3 --forward < 10_enable_susfs_for_ksu.patch || echo "KSU Patch warning"
-          #  cd ..
-          #fi
           cd common
           patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
 
@@ -267,9 +307,9 @@ jobs:
         run: |
           cd "$CONFIG/common"
           echo "正在应用 Manual Hook 补丁"
-          
+
           PATCH="$GITHUB_WORKSPACE/patches/resukisu_manual_hooks.patch"
-          
+
           # 检查文件是否存在
           if [ ! -f "$PATCH" ]; then
               echo "找不到补丁文件: $PATCH"
@@ -277,18 +317,18 @@ jobs:
           fi
 
           # 执行 Patch 并捕获所有输出
-          set +e 
-          
+          set +e
+
           echo "正在执行 patch 命令..."
-          
+
           patch -p1 -F 3 --fuzz=5 < "$PATCH" > patch_log.txt 2>&1
-          
+
           # 记录 patch 命令本身的退出代码
           PATCH_EXIT_CODE=$?
-          
+
           set -e
 
-          # 3显示完整日志
+          # 显示完整日志
           echo "====================== PATCH OUTPUT START ======================"
           if [ -f patch_log.txt ]; then
               cat patch_log.txt
@@ -296,7 +336,7 @@ jobs:
               echo "无日志输出"
           fi
           echo "====================== PATCH OUTPUT END   ======================"
-          
+
           if [ $PATCH_EXIT_CODE -ne 0 ]; then
               echo "Patch 命令返回了错误代码 ($PATCH_EXIT_CODE)"
               exit 1
@@ -312,25 +352,25 @@ jobs:
           else
               echo "Manual Hook 补丁已成功应用"
           fi
-          
+
       - name: 注入 ZRAM/BBG 补丁
         run: |
           cd "$CONFIG/common"
-          
+
           PATCH=../../Action-Build/patches/optimized_mem_operations.patch
           if [ -f "$PATCH" ]; then
-          patch -p1 --forward < "$PATCH"
+            patch -p1 --forward < "$PATCH"
           else
-          echo "Skip: $PATCH not found!"
+            echo "Skip: $PATCH not found!"
           fi
-          
+
           PATCH=../../Action-Build/patches/file_struct_8bytes_align.patch
           if [ -f "$PATCH" ]; then
-          patch -p1 --forward < "$PATCH"
+            patch -p1 --forward < "$PATCH"
           else
-          echo "Skip: $PATCH not found!"
+            echo "Skip: $PATCH not found!"
           fi
-          
+
           if [ "${{ inputs.use_zram }}" == "true" ]; then
             echo "Processing ZRAM/LZ4K..."
             # 复制 LZ4K 和 oplus 源代码
@@ -345,15 +385,15 @@ jobs:
             cp -r ../../zzh_patch/zram/include/linux/* ./include/linux/
             cp ../../zzh_patch/zram/${{ env.KERNEL_VERSION }}/lz4_1.10.0.patch ./
             patch -p1 -F 3 --fuzz=5 < lz4_1.10.0.patch || true
-            
+
             # 应用 LZ4KD & oplus patches
             cp ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
-            
+
             cp ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4k_oplus.patch ./
             patch -p1 -F 3 < lz4k_oplus.patch || true
           fi
-          
+
           if [ "${{ inputs.use_bbg }}" == "true" ]; then
             cd ..
             wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
@@ -364,8 +404,8 @@ jobs:
         run: |
           cd "$CONFIG/common"
           if [ "${{ inputs.bypass_unicode }}" == "true" ]; then
-          cp ../../xiaoxiaow_patch/common/unicode_bypass_fix_6.1-.patch ./
-          patch -p1 -F 3 --fuzz=5 < unicode_bypass_fix_6.1-.patch || true
+            cp ../../xiaoxiaow_patch/common/unicode_bypass_fix_6.1-.patch ./
+            patch -p1 -F 3 --fuzz=5 < unicode_bypass_fix_6.1-.patch || true
           fi
 
       - name: 配置 Defconfig
@@ -374,11 +414,11 @@ jobs:
           DEFCONFIG="common/arch/arm64/configs/gki_defconfig"
           echo "CONFIG_KSU=y" >> $DEFCONFIG
           echo "CONFIG_WERROR=n" >> $DEFCONFIG
-          
+
           if [[ "${{ inputs.kernelsu_variant }}" == *"SukiSU"* ]] && [[ "${{ inputs.use_kpm }}" == "true" ]]; then
              echo "CONFIG_KPM=y" >> $DEFCONFIG
           fi
-          
+
           if [ "${{ inputs.use_zram }}" == "true" ]; then
              echo "CONFIG_ZSMALLOC=y" >> $DEFCONFIG
              echo "CONFIG_ZRAM=y" >> $DEFCONFIG
@@ -391,14 +431,14 @@ jobs:
              echo "CONFIG_CRYPTO_LZ4HC=y" >> $DEFCONFIG
              echo "CONFIG_CRYPTO_LZ4KD=y" >> $DEFCONFIG
           fi
-          
+
           if [ "${{ inputs.use_bbg }}" == "true" ]; then echo "CONFIG_BBG=y" >> $DEFCONFIG; fi
-          
-          if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then 
+
+          if [ "${{ inputs.enable_tmpfs }}" == "true" ]; then
              echo "CONFIG_TMPFS_XATTR=y" >> $DEFCONFIG
              echo "CONFIG_TMPFS_POSIX_ACL=y" >> $DEFCONFIG
           fi
-          
+
           if [ "${{ inputs.cancel_susfs }}" == "false" ]; then
              # 没取消 SUSFS，则启用 SUSFS 配置
              echo "CONFIG_KSU_SUSFS=y" >> $DEFCONFIG
@@ -406,40 +446,41 @@ jobs:
              echo "CONFIG_KSU_MANUAL_HOOK=y" >> $DEFCONFIG
              echo "已在 Defconfig 中启用 CONFIG_KSU_MANUAL_HOOK"
           fi
-          
+
           if [[ "${{ inputs.resukisu_multi_manager }}" == "true" ]]; then
-          echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
+            echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $DEFCONFIG
           fi
-          
+
           sed -i 's/check_defconfig//g' common/build.config.gki*
+
       - name: 设置构建时间与版本
         run: |
           cd "$CONFIG"
           if [ -n "${{ inputs.build_time }}" ]; then
              echo "正在设置构建时间: ${{ inputs.build_time }}"
-             perl -pi -e "s{UTS_VERSION=\"\\\$\(echo \\\$UTS_VERSION \\\$CONFIG_FLAGS \\\$TIMESTAMP \\| cut -b -\\\$UTS_LEN\)\"}{UTS_VERSION=\"#1 SMP PREEMPT ${{ inputs.build_time }}\"}" ./common/scripts/mkcompile_h
+             perl -pi -e "s{UTS_VERSION=\\\"\\\\\\$\\(echo \\\\\\$UTS_VERSION \\\\\\$CONFIG_FLAGS \\\\\\$TIMESTAMP \\| cut -b -\\\\\\$UTS_LEN\\)\\\"}{UTS_VERSION=\\\"#1 SMP PREEMPT ${{ inputs.build_time }}\\\"}" ./common/scripts/mkcompile_h
           fi
-          
+
           if [ -n "${{ inputs.version }}" ]; then
              echo "正在设置版本后缀: ${{ inputs.version }}"
-             sed -i '$s|echo "\$res"|echo "${{ inputs.version }}"|' ./common/scripts/setlocalversion
-             sed -i '/^CONFIG_LOCALVERSION=/ s/="\([^"]*\)"/="${{ inputs.version }}"/' common/arch/arm64/configs/gki_defconfig
+             sed -i '$s|echo \"\\$res\"|echo \"${{ inputs.version }}\"|' ./common/scripts/setlocalversion
+             sed -i '/^CONFIG_LOCALVERSION=/ s/=\"\\([^\"]*\\)\"/=\"${{ inputs.version }}\"/' common/arch/arm64/configs/gki_defconfig
           fi
 
       - name: 编译内核
         run: |
           cd "$CONFIG"
           sed -i 's/BUILD_SYSTEM_DLKM=1/BUILD_SYSTEM_DLKM=0/' ./common/build.config.gki.aarch64
-          sed -i '/MODULES_ORDER=android\/gki_aarch64_modules/d' ./common/build.config.gki.aarch64
+          sed -i '/MODULES_ORDER=android\\/gki_aarch64_modules/d' ./common/build.config.gki.aarch64
           sed -i '/KMI_SYMBOL_LIST_STRICT_MODE/d' ./common/build.config.gki.aarch64
-          
+
           echo "开始编译..."
           # 确保环境变量里有 CCACHE_DIR
           export CCACHE_DIR=$HOME/.ccache
           export CCACHE_EXEC=/usr/bin/ccache
-          
+
           LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang"
-          
+
           echo "Ccache 统计:"
           ccache -s
 
@@ -453,7 +494,7 @@ jobs:
              rm -rf Image && mv oImage Image
              cd ../../../..
            fi
-           
+
            cd AnyKernel3
            cp ../$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist/Image ./
            ZIP_NAME="GKI-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}-${{ inputs.kernelsu_variant }}.zip"
@@ -466,9 +507,9 @@ jobs:
           cd "$CONFIG/out/${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}/dist"
           mkdir bootimgs && cd bootimgs
           cp ../Image ./
-          
+
           GKI_URL="https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-${{ env.OS_PATCH_LEVEL }}_${{ env.REVISION }}.zip"
-          
+
           echo "下载官方 Boot: $GKI_URL"
           if curl --output /dev/null --silent --head --fail "$GKI_URL"; then
              curl -Lo gki.zip "$GKI_URL"
@@ -476,15 +517,15 @@ jobs:
              echo "错误: Google服务器上找不到该版本的 Boot 镜像，尝试使用 Fallback (2023-01)..."
              curl -Lo gki.zip "https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip"
           fi
-          
+
           unzip gki.zip && rm gki.zip
           $UNPACK_BOOTIMG --boot_img=boot-5.10.img
-          
+
           gzip -n -k -f -9 ./Image > ./Image.gz
-          
+
           $MKBOOTIMG --header_version 4 --kernel Image.gz --output boot-new.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ env.OS_PATCH_LEVEL }}"
           $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-new.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          
+
           mv boot-new.img $GITHUB_WORKSPACE/boot.img
 
       - name: 上传产物
@@ -498,13 +539,13 @@ jobs:
       - name: 保存 Release 元数据
         run: |
           mkdir -p release_info
-          
+
           # 生成 Tag 名字
           echo "v${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }}-${{ env.OS_PATCH_LEVEL }}_${{ github.run_number }}" > release_info/tag_name.txt
-          
+
           # 生成 Release 标题
           echo "Android 12 GKI ${{ env.KERNEL_VERSION }}.${{ env.SUB_LEVEL }} (${{ env.OS_PATCH_LEVEL }})" > release_info/release_title.txt
-          
+
           # 生成 Release 说明正文
           cat <<EOF > release_info/release_body.md
           ### GKI Kernel Build Info
@@ -518,7 +559,7 @@ jobs:
           - **KPM:** ${{ inputs.use_kpm }}
           - **TMPFS:** ${{ inputs.enable_tmpfs }}
           - **UNICODE BYPASS:** ${{ inputs.bypass_unicode }}
-          
+
           _Built by Github Actions (Run #${{ github.run_number }})_
           EOF
 
