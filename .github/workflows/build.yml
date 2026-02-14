@@ -458,7 +458,9 @@ jobs:
           cd "$CONFIG"
           if [ -n "${{ inputs.build_time }}" ]; then
              echo "正在设置构建时间: ${{ inputs.build_time }}"
-             echo "KBUILD_BUILD_TIMESTAMP=${{ inputs.build_time }}" >> $GITHUB_ENV
+             BUILD_TIME='${{ inputs.build_time }}'
+             export BUILD_TIME
+             perl -pi -e 'my $bt=$ENV{"BUILD_TIME"}; s|UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"|UTS_VERSION="#1 SMP PREEMPT $bt"|;' ./common/scripts/mkcompile_h
           fi
 
           if [ -n "${{ inputs.version }}" ]; then
@@ -478,6 +480,8 @@ jobs:
           # 确保环境变量里有 CCACHE_DIR
           export CCACHE_DIR=$HOME/.ccache
           export CCACHE_EXEC=/usr/bin/ccache
+          echo "KBUILD_BUILD_TIMESTAMP=${KBUILD_BUILD_TIMESTAMP:-<empty>}"
+          echo "LOCALVERSION=${LOCALVERSION:-<empty>}"
 
           LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang"
 
