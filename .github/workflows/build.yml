@@ -419,7 +419,7 @@ jobs:
         run: |
           echo ""
           echo "=== NoMount patch ==="
-          cd "$KERNEL_ROOT/common" # cd "$CONFIG/common"
+          cd "$CONFIG/common"
           if [ "${{ inputs.cancel_susfs }}" == "true" ]; then
             echo "  no susfs"
             NOMOUNT_PATCH="nomount-kernel-5.10.patch"
