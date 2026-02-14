@@ -458,9 +458,8 @@ jobs:
           cd "$CONFIG"
           if [ -n "${{ inputs.build_time }}" ]; then
              echo "正在设置构建时间: ${{ inputs.build_time }}"
-             BUILD_TIME='${{ inputs.build_time }}'
-             export BUILD_TIME
-             perl -pi -e 'my $bt=$ENV{"BUILD_TIME"}; s|UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"|UTS_VERSION="#1 SMP PREEMPT $bt"|;' ./common/scripts/mkcompile_h
+             echo "KBUILD_BUILD_TIMESTAMP=${{ inputs.build_time }}" >> $GITHUB_ENV
+             echo "KBUILD_BUILD_VERSION=1" >> $GITHUB_ENV
           fi
 
           if [ -n "${{ inputs.version }}" ]; then
