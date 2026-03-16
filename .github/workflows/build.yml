@@ -387,6 +387,27 @@ jobs:
       - name: 注入 ZRAM/BBG 补丁
         run: |
           cd "$CONFIG/common"
+          shopt -s nullglob
+
+          copy_tree_if_present() {
+            src_pattern="$1"
+            dest_dir="$2"
+            matches=( $src_pattern )
+            if [ "${#matches[@]}" -gt 0 ]; then
+              cp -r "${matches[@]}" "$dest_dir/"
+            else
+              echo "Skip: no match for $src_pattern"
+            fi
+          }
+
+          apply_patch_if_present() {
+            patch_file="$1"
+            if [ -f "$patch_file" ]; then
+              patch -p1 -F 3 --fuzz=5 --forward < "$patch_file" || true
+            else
+              echo "Skip: patch not found: $patch_file"
+            fi
+          }
 
           PATCH=../../Action-Build/patches/optimized_mem_operations.patch
           if [ -f "$PATCH" ]; then
@@ -405,24 +426,48 @@ jobs:
           if [ "${{ inputs.use_zram }}" == "true" ]; then
             echo "Processing ZRAM/LZ4K..."
             # 复制 LZ4K 和 oplus 源代码
-            cp -r ../../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
-            cp -r ../../SukiSU_patch/other/zram/lz4k/lib/* ./lib/
-            cp -r ../../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto/
-            cp -r ../../SukiSU_patch/other/zram/lz4k_oplus ./lib/
+            copy_tree_if_present "../../SukiSU_patch/other/zram/lz4k/include/linux/*" "./include/linux"
+            copy_tree_if_present "../../SukiSU_patch/other/zram/lz4k/lib/*" "./lib"
+            copy_tree_if_present "../../SukiSU_patch/other/zram/lz4k/crypto/*" "./crypto"
+            if [ -d ../../SukiSU_patch/other/zram/lz4k_oplus ]; then
+              cp -r ../../SukiSU_patch/other/zram/lz4k_oplus ./lib/
+            else
+              echo "Skip: ../../SukiSU_patch/other/zram/lz4k_oplus not found"
+            fi
 
             # 应用 LZ4 1.10.0 patch
-            rm -f lib/lz4/*
-            cp -r ../../zzh_patch/zram/lz4/* ./lib/lz4/
-            cp -r ../../zzh_patch/zram/include/linux/* ./include/linux/
-            cp ../../zzh_patch/zram/${{ env.KERNEL_VERSION }}/lz4_1.10.0.patch ./
-            patch -p1 -F 3 --fuzz=5 < lz4_1.10.0.patch || true
+            rm -f lib/lz4/* || true
+            copy_tree_if_present "../../zzh_patch/zram/lz4/*" "./lib/lz4"
+            copy_tree_if_present "../../zzh_patch/zram/include/linux/*" "./include/linux"
+
+            LZ4_PATCH=""
+            for candidate in ../../zzh_patch/zram/${{ env.KERNEL_VERSION }}/lz4_1.10.0.patch ../../zzh_patch/zram/*/lz4_1.10.0.patch; do
+              if [ -f "$candidate" ]; then
+                LZ4_PATCH="$candidate"
+                break
+              fi
+            done
+            if [ -n "$LZ4_PATCH" ]; then
+              cp "$LZ4_PATCH" ./
+              apply_patch_if_present ./lz4_1.10.0.patch
+            else
+              echo "Skip: lz4_1.10.0.patch not found in zzh_patch"
+            fi
 
             # 应用 LZ4KD & oplus patches
-            cp ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
-            patch -p1 -F 3 < lz4kd.patch || true
+            if [ -f ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ]; then
+              cp ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
+              patch -p1 -F 3 --forward < lz4kd.patch || true
+            else
+              echo "Skip: lz4kd.patch not found for kernel ${{ env.KERNEL_VERSION }}"
+            fi
 
-            cp ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4k_oplus.patch ./
-            patch -p1 -F 3 < lz4k_oplus.patch || true
+            if [ -f ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4k_oplus.patch ]; then
+              cp ../../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4k_oplus.patch ./
+              patch -p1 -F 3 --forward < lz4k_oplus.patch || true
+            else
+              echo "Skip: lz4k_oplus.patch not found for kernel ${{ env.KERNEL_VERSION }}"
+            fi
           fi
 
           if [ "${{ inputs.use_bbg }}" == "true" ]; then
