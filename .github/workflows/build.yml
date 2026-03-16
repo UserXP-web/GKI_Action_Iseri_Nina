@@ -197,11 +197,17 @@ jobs:
           AOSP_MIRROR=https://android.googlesource.com
           BRANCH=main-kernel-build-2024
           git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
+          echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
+
+      - name: 准备 Boot 打包工具
+        if: ${{ inputs.onlyAk3 == false }}
+        run: |
+          AOSP_MIRROR=https://android.googlesource.com
+          BRANCH=main-kernel-build-2024
           git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth 1 mkbootimg
 
           echo "MKBOOTIMG=$GITHUB_WORKSPACE/mkbootimg/mkbootimg.py" >> $GITHUB_ENV
           echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV
-          echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
 
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
           echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
@@ -235,19 +241,44 @@ jobs:
 
       - name: 同步内核源码
         run: |
+          set -e
           mkdir -p "$CONFIG"
           cd "$CONFIG"
-          git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-6.4.1.git gcc
+
+          git config --global http.version HTTP/1.1
+          git config --global http.lowSpeedLimit 1000
+          git config --global http.lowSpeedTime 60
+
+          sync_kernel_repo() {
+            jobs="$1"
+            attempt=1
+
+            while [ "$attempt" -le 3 ]; do
+              echo "repo sync 第 ${attempt} 次尝试，并发: ${jobs}"
+              if $REPO sync -c --fail-fast --force-sync --no-tags --optimized-fetch -j"${jobs}"; then
+                return 0
+              fi
+
+              attempt=$((attempt + 1))
+              if [ "$attempt" -le 3 ]; then
+                echo "repo sync 失败，等待后重试..."
+                sleep 20
+              fi
+            done
+
+            return 1
+          }
 
           MANIFEST_BRANCH="common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}-${{ env.OS_PATCH_LEVEL }}"
           echo "正在同步分支: $MANIFEST_BRANCH"
 
           $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b $MANIFEST_BRANCH --repo-rev=v2.16
 
-          if ! $REPO sync -c -j$(nproc --all) --fail-fast; then
+          if ! sync_kernel_repo 4; then
              echo "错误: 无法同步分支 $MANIFEST_BRANCH，尝试通用分支..."
-             $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-             $REPO sync -c -j$(nproc --all) --fail-fast
+             rm -rf .repo/manifests .repo/manifest.xml
+             $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b common-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }} --repo-rev=v2.16
+             sync_kernel_repo 2
           fi
 
       - name: 确定 KernelSU 参数
