@@ -648,6 +648,7 @@ jobs:
           echo "[✅] Done."
       - name: NAME_INFO and Config
         run: |
+          cd "$CONFIG"
           NAME_INFO="${{ env.NAME_INFO }}"
           CONFIG_FILE="common/arch/arm64/configs/gki_defconfig"
 
