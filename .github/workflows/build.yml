@@ -248,8 +248,7 @@ jobs:
 
           if [ "${{ inputs.cancel_susfs }}" != "true" ]; then
             if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ] || [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
-              #git clone https://github.com/ShirkNeko/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}" susfs4ksu
-              git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}" susfs4ksu
+              git clone https://github.com/ShirkNeko/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}" susfs4ksu
             else
               git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}" susfs4ksu
             fi
@@ -363,9 +362,18 @@ jobs:
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+          ### ========================== ###
+          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./common/KernelSU/
+          ### ========================== ###
 
           cd common
           patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
+          ### ========================== ###
+          echo "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+          cd KernelSU
+          patch -p1 < 10_enable_susfs_for_ksu.patch || false
+          cd ..
+          ### ========================== ###
 
       - name: Enable manual_hook when disabling SUSFS (strictly checked version)
         if: ${{ inputs.cancel_susfs }}
