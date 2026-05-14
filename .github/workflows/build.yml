@@ -23,7 +23,7 @@ permissions:
           - "Manual Input (See below)"
         default: "5.10.236 | 2025-05 | r7"
       manual_version:
-        description: "Manual version parameters (valid in Manual, format: 5.10.233 2025-02 r5)"
+        description: "Manual parameters (format: 5.10.233 2025-02 r5)"
         required: false
         type: string
       version:
@@ -31,7 +31,7 @@ permissions:
         required: false
         type: string
       build_time:
-        description: "Set kernel build time (leave blank to use current time)"
+        description: "kernel build time (blank to use current time)"
         required: false
         type: string
       kernelsu_variant:
@@ -54,11 +54,11 @@ permissions:
           - tmp-builtin
         default: "Stable(标准)"
       resukisu_ref:
-        description: "ReSukiSU specifies ref/commit (applies to ReSukiSU; leave blank uses default: main)."
+        description: "ReSukiSU ref/commit (apply to ReSukiSU; leave blank: main)."
         required: false
         type: string
       susfs_ref:
-        description: "susfs4ksu specifies ref/commit (apply if SUSFS enabled; leave blank uses default branch)."
+        description: "susfs4ksu ref/commit (apply if SUSFS enabled; leave blank for default branch)."
         required: false
         type: string
       use_zram:
@@ -67,7 +67,7 @@ permissions:
         type: boolean
         default: true
       use_bbg:
-        description: "Activate BBG anti-grinding device?"
+        description: "Activate BBG anti-grind device?"
         required: true
         type: boolean
         default: true
