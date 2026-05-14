@@ -236,7 +236,11 @@ jobs:
 
       - name: Clone patch repository
         run: |
-          git clone https://github.com/osm0sis/AnyKernel3.git
+          #git clone https://github.com/osm0sis/AnyKernel3.git
+          echo "CLONE AnyKernel3..."
+          git clone https://github.com/ReSukiSU-GKI/AnyKernel3.git -b "master"
+          rm -rf AnyKernel3/.git
+          
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
           git clone https://github.com/zzh20188/GKI_KernelSU_SUSFS.git zzh_patch
           git clone https://github.com/Numbersf/Action-Build.git --depth=1
