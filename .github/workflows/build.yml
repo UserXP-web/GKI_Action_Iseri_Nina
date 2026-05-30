@@ -620,26 +620,27 @@ jobs:
           echo "=== NoMount patch ==="
           cd "$CONFIG/common"
 
-          MASTER_EXP="master" # master dev
           if [ "${{ inputs.add_nomount }}" == "true" ]; then
+            MASTER_EXP="master" # master dev
             echo "  Copying files to fs/..."
-            #curl -LSs "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/$MASTER_EXP/kernel/src/nomount.c" -o ./fs/nomount.c
-            curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount.c" -o ./fs/nomount.c
             curl -LSs "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/$MASTER_EXP/kernel/src/nomount.h" -o ./fs/nomount.h
+            curl -LSs "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/$MASTER_EXP/kernel/src/nomount.c" -o ./fs/nomount.c
+            #curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount.h" -o ./fs/nomount.h
+            #curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount.c" -o ./fs/nomount.c
             echo "  Done."
             echo "  <> LIVE/latest patch ($MASTER_EXP)"
-            curl -LSs "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/$MASTER_EXP/kernel/nomount_kernel_integration.patch" -o nomount.patch
+            curl -LSs "https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/$MASTER_EXP/kernel/patches/nomount_5.10_kernel_integration.patch" -o nomount.patch
           else
             echo "  Copying files to fs/..."
-            curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount.c" -o ./fs/nomount.c
             curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount.h" -o ./fs/nomount.h
+            curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount.c" -o ./fs/nomount.c
             echo "  Done."
-            echo "  <> LIVE/latest patch ($MASTER_EXP) with edits by UserXP"
-            curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount_kernel_integration.patch" -o nomount.patch
+            echo "  <> Patches with edits by UserXP"
+            curl -LSs "https://raw.githubusercontent.com/UserXP-web/kernel_build/refs/heads/main/patches/nomount/edit/nomount_5.10_kernel_integration.patch" -o nomount.patch
           fi
           chmod 777 nomount.patch
           echo "Applying..."
-          patch -p1 --fuzz=3 < nomount.patch # > patch_nomount_log.txt 2>&1
+          patch -p1 < nomount.patch # > patch_nomount_log.txt 2>&1
           echo "=== END NoMount patch ==="
       - name: HymoFS support
         if: ${{ inputs.add_hymofs }}
