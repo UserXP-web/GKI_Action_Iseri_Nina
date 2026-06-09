@@ -274,6 +274,14 @@ jobs:
 
           $REPO init --depth=1 -u https://android.googlesource.com/kernel/manifest -b $MANIFEST_BRANCH --repo-rev=v2.16
 
+          # 修复 Google 将历史分支移动到 deprecated/ 导致 repo sync 失败的问题
+          if grep -q "revision=\"android12-5.10-$OS_PATCH_LEVEL\"" .repo/manifests/default.xml; then
+             echo "检测到历史分支，尝试将其修正为 deprecated 路径..."
+             sed -i "s/revision=\"android12-5.10-$OS_PATCH_LEVEL\"/revision=\"deprecated\/android12-5.10-$OS_PATCH_LEVEL\"/g" .repo/manifests/default.xml
+             sed -i "s/upstream=\"android12-5.10-$OS_PATCH_LEVEL\"/upstream=\"deprecated\/android12-5.10-$OS_PATCH_LEVEL\"/g" .repo/manifests/default.xml
+             sed -i "s/dest-branch=\"android12-5.10-$OS_PATCH_LEVEL\"/dest-branch=\"deprecated\/android12-5.10-$OS_PATCH_LEVEL\"/g" .repo/manifests/default.xml
+          fi
+
           if ! sync_kernel_repo 4; then
              echo "错误: 无法同步分支 $MANIFEST_BRANCH，尝试通用分支..."
              rm -rf .repo/manifests .repo/manifest.xml
